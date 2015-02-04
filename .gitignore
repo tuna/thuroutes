@@ -2,3 +2,5 @@
 *.txt
 *.bat
 ip-*
+__pycache__
+custom.py
