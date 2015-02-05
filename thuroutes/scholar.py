@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
 
-SCHOLOR_ROUTES = [
+SCHOLAR_ROUTES = [
     '208.99.166.251/32',  # IEEE Xplore
     '140.98.0.0/16',      # IEEE-org
     '64.238.147.53/32',   # dl.acm.org

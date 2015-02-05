@@ -8,7 +8,7 @@ import subprocess
 import sys
 import urllib
 import ipaddress
-from .scholar import SCHOLOR_ROUTES
+from .scholar import SCHOLAR_ROUTES
 from .custom import CUSTOM_ROUTES
 
 
@@ -222,7 +222,7 @@ def fetch_ip_data():
 
         results.append((starting_ip, mask, cidr))
 
-    extra_routes = SCHOLOR_ROUTES + CUSTOM_ROUTES
+    extra_routes = SCHOLAR_ROUTES + CUSTOM_ROUTES
     for item in extra_routes:
         ipnet = ipaddress.IPv4Network(item)
         results.append((
