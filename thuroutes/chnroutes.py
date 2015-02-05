@@ -19,7 +19,7 @@ def generate_ovpn(_):
         #!/bin/bash -
 
         export PATH="/bin:/sbin:/usr/sbin:/usr/bin"
-        OLDGW=$(ip route show 0/0 | sed -e 's/^default//')
+        OLDGW=$(ip route show 0/0 | head -n1 | sed -e 's/^default//')
 
         ip -batch - <<EOF
         """)
@@ -75,19 +75,12 @@ def generate_linux(metric):
             exit 0
         fi
 
-        if [ ! -e /tmp/vpn_oldgw ]; then
-            echo $OLDGW > /tmp/vpn_oldgw
-        fi
-
         ip -batch - <<EOF
         """)
 
     downscript_header = textwrap.dedent("""\
         #!/bin/bash
         export PATH="/bin:/sbin:/usr/sbin:/usr/bin"
-
-        OLDGW=$(cat /tmp/vpn_oldgw)
-
         ip -batch - <<EOF
         """)
 
@@ -103,13 +96,7 @@ def generate_linux(metric):
         downfile.write('route del %s/%s\n' % (ip, mask))
 
     upfile.write('EOF\n')
-    downfile.write(
-        textwrap.dedent('''\
-        EOF
-
-        rm /tmp/vpn_oldgw
-        ''')
-    )
+    downfile.write('EOF\n')
 
     upfile.close()
     downfile.close()
