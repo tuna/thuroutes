@@ -8,12 +8,13 @@ import subprocess
 import sys
 import urllib
 import ipaddress
+from IPy import IP, IPSet
 from .scholar import SCHOLAR_ROUTES
 from .custom import CUSTOM_ROUTES
 
 
-def generate_ovpn(_):
-    results = fetch_ip_data()
+def generate_ovpn(_, aggregate):
+    results = fetch_ip_data(aggregate)
 
     upscript_header = textwrap.dedent("""\
         #!/bin/bash -
@@ -50,8 +51,8 @@ def generate_ovpn(_):
     os.chmod('vpn-down.sh', 0o755)
 
 
-def generate_old(metric):
-    results = fetch_ip_data()
+def generate_old(metric, aggregate):
+    results = fetch_ip_data(aggregate)
 
     rfile = open('routes.txt', 'w')
 
@@ -63,8 +64,8 @@ def generate_old(metric):
     rfile.close()
 
 
-def generate_linux(metric):
-    results = fetch_ip_data()
+def generate_linux(metric, aggregate):
+    results = fetch_ip_data(aggregate)
 
     upscript_header = textwrap.dedent("""\
         #!/bin/bash -
@@ -105,8 +106,8 @@ def generate_linux(metric):
     os.chmod('ip-down', 0o0755)
 
 
-def generate_mac(_):
-    results = fetch_ip_data()
+def generate_mac(_, aggregate):
+    results = fetch_ip_data(aggregate)
 
     upscript_header = textwrap.dedent("""\
         #!/bin/sh
@@ -151,8 +152,8 @@ def generate_mac(_):
     os.chmod('ip-down', 0o755)
 
 
-def generate_win(metric):
-    results = fetch_ip_data()
+def generate_win(metric, aggregate):
+    results = fetch_ip_data(aggregate)
 
     upscript_header = textwrap.dedent("""\
         @echo off\n
@@ -177,15 +178,22 @@ def generate_win(metric):
     downfile.close()
 
 
-def fetch_ip_data():
+def fetch_ip_data(aggregate):
     url = 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
-    try:
-        data = subprocess.check_output(['wget', url, '-O-'])
-    except (OSError, AttributeError):
-        print(("Fetching data from apnic.net, "
-               "it might take a few minutes, please wait..."),
-              file=sys.stderr)
-        data = urllib.urlopen(url).read()
+    if os.path.exists("delegated-apnic-latest"):
+        with open("delegated-apnic-latest") as f:
+            data = bytearray(f.read(), encoding="utf-8")
+    else:
+        try:
+            data = subprocess.check_output(['wget', url, '-O-'])
+        except (OSError, AttributeError):
+            print(("Fetching data from apnic.net, "
+                   "it might take a few minutes, please wait..."),
+                  file=sys.stderr)
+            data = urllib.urlopen(url).read()
+
+        with open("delegated-apnic-lates", 'w') as f:
+            f.write(data)
 
     cnregex = re.compile(r'^apnic\|cn\|ipv4\|[\d\.]+\|\d+\|\d+\|a\w*$',
                          re.I | re.M)
@@ -218,7 +226,31 @@ def fetch_ip_data():
             ipnet.prefixlen,
         ))
 
-    return results
+    return aggregate_nets(results) if aggregate else results
+
+
+def aggregate_nets(nets):
+    def flush(ipset):
+        for ip in ipset:
+            addr, prefix = (ip.strNormal(), '32') \
+                if ip.prefixlen() == 32 else \
+                ip.strNormal().split('/')
+            mask = ip.strNetmask()
+            yield (addr, mask, prefix)
+
+    i, limit = 0, 300
+    ips = IPSet()
+    for starting_ip, mask, prefix in nets:
+        ip = IP("{}/{}".format(starting_ip, prefix))
+        ips.add(ip)
+        i += 1
+
+        if i >= limit:
+            i = 0
+            yield from flush(ips)
+            ips = IPSet()
+
+    yield from flush(ips)
 
 
 def main():
@@ -230,6 +262,11 @@ def main():
                         nargs='?',
                         choices=['openvpn', 'old', 'mac', 'linux', 'win'],
                         help="target platform")
+
+    parser.add_argument('--aggregate',
+                        action='store_true',
+                        help="Aggregate Routes")
+
     parser.add_argument('-m',
                         dest='metric',
                         default=5,
@@ -240,15 +277,15 @@ def main():
     args = parser.parse_args()
 
     if args.platform.lower() == 'openvpn':
-        generate_ovpn(args.metric)
+        generate_ovpn(args.metric, args.aggregate)
     elif args.platform.lower() == 'old':
-        generate_old(args.metric)
+        generate_old(args.metric, args.aggregate)
     elif args.platform.lower() == 'linux':
-        generate_linux(args.metric)
+        generate_linux(args.metric, args.aggregate)
     elif args.platform.lower() == 'mac':
-        generate_mac(args.metric)
+        generate_mac(args.metric, args.aggregate)
     elif args.platform.lower() == 'win':
-        generate_win(args.metric)
+        generate_win(args.metric, args.aggregate)
     else:
         exit(1)
 
