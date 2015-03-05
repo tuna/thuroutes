@@ -10,7 +10,10 @@ import urllib
 import ipaddress
 from IPy import IP, IPSet
 from .scholar import SCHOLAR_ROUTES
-from .custom import CUSTOM_ROUTES
+try:
+    from .custom import CUSTOM_ROUTES
+except:
+    pass
 
 
 def generate_ovpn(_, aggregate):
@@ -181,8 +184,8 @@ def generate_win(metric, aggregate):
 def fetch_ip_data(aggregate):
     url = 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
     if os.path.exists("delegated-apnic-latest"):
-        with open("delegated-apnic-latest") as f:
-            data = bytearray(f.read(), encoding="utf-8")
+        with open("delegated-apnic-latest", "rb") as f:
+            data = f.read()
     else:
         try:
             data = subprocess.check_output(['wget', url, '-O-'])
@@ -192,7 +195,7 @@ def fetch_ip_data(aggregate):
                   file=sys.stderr)
             data = urllib.urlopen(url).read()
 
-        with open("delegated-apnic-lates", 'w') as f:
+        with open("delegated-apnic-latest", 'wb') as f:
             f.write(data)
 
     cnregex = re.compile(r'^apnic\|cn\|ipv4\|[\d\.]+\|\d+\|\d+\|a\w*$',
