@@ -8,7 +8,8 @@ SCHOLAR_ROUTES = [
     '64.238.147.56/32',   # dl.acm.org
     '140.174.24.0/24',    # springer
     '114.112.65.0/24',    # springer
-    '118.186.70.12/32',   # springer
+    '118.186.70.0/24',    # springer
+    '69.31.119.0/24',     # springer
     '198.81.200.0/24',    # science direct
     '23.55.166.0/24',     # science direct
     '23.59.134.0/24',     # science direct
