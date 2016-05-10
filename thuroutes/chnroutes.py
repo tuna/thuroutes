@@ -13,7 +13,7 @@ from .scholar import SCHOLAR_ROUTES
 try:
     from .custom import CUSTOM_ROUTES
 except:
-    pass
+    CUSTOM_ROUTES = []
 
 
 def generate_ovpn(_, aggregate):
