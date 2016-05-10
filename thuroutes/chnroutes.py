@@ -8,7 +8,11 @@ import subprocess
 import sys
 import urllib
 import ipaddress
-from IPy import IP, IPSet
+try:
+    from IPy import IP, IPSet
+    has_IPy = True
+except:
+    has_IPy = False
 from .scholar import SCHOLAR_ROUTES
 try:
     from .custom import CUSTOM_ROUTES
@@ -278,6 +282,10 @@ def main():
                         help="metric")
 
     args = parser.parse_args()
+
+    if args.aggregate and not has_IPy:
+        args.aggregate = False
+        print("Route aggregation needs IPy.")
 
     if args.platform.lower() == 'openvpn':
         generate_ovpn(args.metric, args.aggregate)
